@@ -6,7 +6,7 @@ git clone https://github.com/Zakovskiy/mafiaonline.py
 ```
 
 # Import and Auth
-```python
+```python3
 import mafiaonline
 
 Mafia = mafiaonline.Client("email", "password")
