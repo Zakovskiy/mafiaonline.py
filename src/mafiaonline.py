@@ -2,8 +2,7 @@ import requests
 import socket
 import json
 import threading
-from utils import tags
-from utils import md5hash
+from .utils import tags, md5hash
 
 class Client:
     def __init__(self, email, password, device_Id: str = "1316eefdd6dc27a9"):
@@ -178,22 +177,22 @@ class Client:
 
     def __listener(self):
         while (self.live):
-            bytes = bytes()
+            buffer = bytes()
             while (True):
                 recv = self.client_socket.recv(2048)
                 read = len(recv)
                 if read != -1:
                     i = read - 1
-                    if r[i] == 0:
-                        bytes = bytes + recv
-                        decode = bytes.decode()
-                        bytes = bytes()
+                    if recv[i] == 0:
+                        buffer = buffer + recv
+                        decode = buffer.decode()
+                        buffer = bytes()
                         for string in decode.strip().split("[\u0000]"):
                             string = string.strip()[0:-1]
                             if string != "p":
                                 self.data.append(string)
                     else:
-                        bytes = bytes + recv
+                        buffer = buffer + recv
                 else:
                     return
 
