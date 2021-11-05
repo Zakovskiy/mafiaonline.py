@@ -1,8 +1,8 @@
 import requests
 import socket
 import json
-import threadind
-from .utils import md5hash
+import threading
+from utils import md5hash
 
 class Client:
     def __init__(self, email, password, device_Id: str = "1316eefdd6dc27a9"):
