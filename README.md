@@ -8,7 +8,7 @@
 </p>
 
 
-<p align="center">This library for application https://play.google.com/store/apps/details?id=com.tokarev.mafia</p>
+<p align="center">This library for <a href="https://play.google.com/store/apps/details?id=com.tokarev.mafia">Mafia Online</a></p>
 
 # Install
 ```
