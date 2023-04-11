@@ -1,7 +1,7 @@
 import hashlib
 
-class Client:
 
+class Md5:
 	def __init__(self):
 		pass
 
