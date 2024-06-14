@@ -3,6 +3,7 @@ import json
 import threading
 import base64
 import time
+import websocket
 from .utils.md5hash import Md5
 from .structures.packet_data_keys import PacketDataKeys
 from .structures.models import ModelUser, ModelServerConfig, ModelRoom, ModelFriend, ModelMessage
@@ -21,9 +22,10 @@ class Client(WebClient):
         self.user: ModelUser = ModelUser()
         self.server_config: ModelServerConfig = ModelServerConfig()
         self.address = "37.143.8.68"
+        self.port = "7090"
         self.alive = True
         self.data = []
-        self.client_socket = None
+        self.ws = None
         super().__init__(self)
         self.create_connection()
 
@@ -284,46 +286,25 @@ class Client(WebClient):
         return self.listen()
 
     def create_connection(self) -> None:
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client_socket.connect((self.address, 8090))
+        self.ws = websocket.WebSocket()
+        self.ws.connect(f"ws://{self.address}:{self.port}")
         self.listener = threading.Thread(target=self.__listener).start()
 
     def __listener(self) -> None:
         while self.alive:
-            buffer = bytes()
-            while self.alive:
-                try:
-                    r = self.client_socket.recv(2084)
-                except:
-                    print("error get data")
-                    return
-                read = len(r)
-                if read not in [-1, 0, 1]:
-                    i = read - 1
-                    if r[i] == 0:
-                        buffer = buffer + r
-                        d = buffer.decode()
-                        buffer = bytes()
-                        for str in d.strip().split("\x00"):
-                            if str not in ["", " "]:
-                                if str == "p":
-                                    try:
-                                        self.client_socket.send("p\n".encode())
-                                    except:
-                                        return
-                                    continue
-                                #print(f"{self.user.username}: {str}")
-                                self.data.append(str)
-                    else:
-                        buffer = buffer + r
-                else:
-                    return
+            try:
+                r = self.ws.recv()
+            except Exception as e:
+                print("error get data")
+                return
+            if r:
+                self.data.append(r)
 
     def send_server(self, data: dict, remove_token_from_object: bool = False) -> None:
         if not remove_token_from_object:
             data[PacketDataKeys.TOKEN_KEY] = self.token
         data[PacketDataKeys.USER_OBJECT_ID_KEY] = data.get(PacketDataKeys.USER_OBJECT_ID_KEY, self.id)
-        self.client_socket.send((json.dumps(data)+"\n").encode())
+        self.ws.send((json.dumps(data)+"\n").encode())
 
     def listen(self, force: bool = False) -> dict:
         while not self.data and self.alive:
@@ -342,4 +323,4 @@ class Client(WebClient):
 
     def __del__(self):
         self.alive = False
-        self.client_socket.close()
+        self.ws.close()
