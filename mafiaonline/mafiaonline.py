@@ -12,6 +12,7 @@ from typing import List
 from secrets import token_hex
 from msgspec.json import decode
 from .web import WebClient
+from queue import Queue
 
 
 class Client(WebClient):
@@ -24,7 +25,7 @@ class Client(WebClient):
         self.address = "37.143.8.68"
         self.port = "7090"
         self.alive = True
-        self.data = []
+        self.data = Queue()
         self.ws = None
         super().__init__(self)
         self.create_connection()
@@ -298,7 +299,7 @@ class Client(WebClient):
                 print("error get data")
                 return
             if r:
-                self.data.append(r)
+                self.data.put(r)
 
     def send_server(self, data: dict, remove_token_from_object: bool = False) -> None:
         if not remove_token_from_object:
@@ -307,12 +308,8 @@ class Client(WebClient):
         self.ws.send((json.dumps(data)+"\n").encode())
 
     def listen(self, force: bool = False) -> dict:
-        while not self.data and self.alive:
-            if force:
-                return {"ty": "empty"}
-        res = self.data[0]
-        del self.data[0]
-        return json.loads(res)
+        response = self.data.get(timeout=5)
+        return json.loads(response)
 
     def _get_data(self, type: str, force: bool = False) -> dict:
         data = self.listen(force=force)
