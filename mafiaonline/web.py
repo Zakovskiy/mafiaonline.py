@@ -7,7 +7,10 @@ class WebClient:
     def __init__(self, client):
         self.client = client
         self.rest_address = f"http://{self.client.address}:8008"
-        self.auth_headers = {
+
+    @property
+    def auth_headers(self):
+        return {
             "Content-Type": "application/x-www-form-urlencoded",
             "Authorization": self.encode_auth_header()
         }
