@@ -7,6 +7,7 @@ class Sex(IntEnum):
 
 
 class Languages(StrEnum):
+    UNSELECTED = ""
     RUSSIAN = "ru"
     ENGLISH = "en"
 
@@ -22,5 +23,6 @@ class Roles(IntEnum):
     JOURNALIST = 7
     BODYGUARD = 8
     BARMAN = 9
+
     SPY = 10
     INFORMER = 11
