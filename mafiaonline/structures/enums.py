@@ -23,6 +23,17 @@ class Roles(IntEnum):
     JOURNALIST = 7
     BODYGUARD = 8
     BARMAN = 9
-
     SPY = 10
     INFORMER = 11
+
+class RatingMode(str, Enum):
+    ALL_TIME = "all_time"
+    TODAY = "today"
+    YESTERDAY = "yesterday"
+
+
+class RatingType(str, Enum):
+    GAMES = "games"
+    EXPERIENCE = "experience"
+    AUTHORITY = "authority"
+    WINS = "wins"
