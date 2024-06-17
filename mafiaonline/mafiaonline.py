@@ -1,22 +1,24 @@
 import socket
 import json
 import threading
+import threading
 import base64
 import time
-import websocket
+import socks
 from .utils.md5hash import Md5
 from .structures.packet_data_keys import PacketDataKeys
 from .structures.models import ModelUser, ModelServerConfig, ModelRoom, ModelFriend, ModelMessage
-from .structures.enums import Languages, Roles, Sex
+from .structures.enums import Languages, Roles, Sex, RatingMode, RatingType
 from typing import List
 from secrets import token_hex
 from msgspec.json import decode
 from .web import WebClient
 from queue import Queue
+from websocket import create_connection
 
 
 class Client(WebClient):
-    def __init__(self):
+    def __init__(self, proxy: list = None, debug: bool = False):
         self.token: str = None
         self.id: str = None
         self.md5hash = Md5()
@@ -30,7 +32,7 @@ class Client(WebClient):
         super().__init__(self)
         self.create_connection()
 
-    def sign_in(self, email: str = None, password: str = None, token: str = None, user_id: str = None) -> ModelUser:
+    def sign_in(self, email: str = "", password: str = "", token: str = "", user_id: str = "") -> ModelUser:
         """
         Sign in into user
 
@@ -43,27 +45,45 @@ class Client(WebClient):
         """
         data = {
             "d": token_hex(10),
-            "ty": PacketDataKeys.SIGN_IN_KEY
+            "ty": "sin"
         }
-        if not token:
-            data["e"] = email
-            data["pw"] = self.md5hash.md5Salt(password)
-        else:
-            data["o"] = user_id
-            data["t"] = token
+        data["e"] = email
+        data["pw"] = self.md5hash.md5Salt(password) if password else ""
+        data["o"] = user_id
+        data["t"] = token
         self.send_server(data)
+        time.sleep(.5)
         data = self._get_data("usi")
+        while data["ty"] != "usi":
+            return False
         self.user = decode(json.dumps(data["uu"]), type=ModelUser)
         self.server_config = decode(json.dumps(data["scfg"]), type=ModelServerConfig)
         self.token = self.user.token
         self.id = self.user.user_id
         return self.user
+        
+    def get_rating(self, rating_type: RatingType = RatingType.AUTHORITY, rating_mode: RatingMode = RatingMode.ALL_TIME):
+        data = {
+            "ty": "gr",
+            "rt": rating_type,
+            "rmd": rating_mode
+        }
+        self.send_server(data)
+        return self._get_data("rtg")
 
     def kick_user_vote(self, room_id: str, value: bool = True) -> None:
         data = {
             "ty": "kuv",
             "ro": room_id,
             "v": value
+        }
+        self.send_server(data)
+        
+    def kick_user(self, user_id: str, room_id: str) -> None:
+        data = {
+            "ty": "ku",
+            "ro": room_id,
+            "uo": user_id
         }
         self.send_server(data)
 
@@ -106,11 +126,11 @@ class Client(WebClient):
         }
         self.send_server(request_data)
         time.sleep(1)
-        data = self._get_data("rcd", True)
+        data = self._get_data("rcd")
         while data["ty"] != "rcd":
             self.send_server(request_data)
-            time.sleep(1)
-            data = self._get_data("rcd", True)
+            time.sleep(.5)
+            data = self._get_data("rcd")
             print("rerecvier")
         return decode(json.dumps(data["rr"]), type=ModelRoom)
 
@@ -182,6 +202,7 @@ class Client(WebClient):
             "ro": room_id
         }
         self.send_server(data)
+    
 
     def create_player(self, room_id: str) -> None:
         """
@@ -195,6 +216,7 @@ class Client(WebClient):
             "ro": room_id
         }
         self.send_server(data)
+        return self._get_data('pls')
 
     def join_room(self, room_id: str, password: str = "") -> None:
         data = {
@@ -203,6 +225,7 @@ class Client(WebClient):
             "ro": room_id
         }
         self.send_server(data)
+        
 
     def leave_room(self, room_id: str) -> None:
         data = {
@@ -284,22 +307,21 @@ class Client(WebClient):
             "uo": user_id
         }
         self.send_server(data)
-        return self.listen()
+        return self._get_data("uup")
 
     def create_connection(self) -> None:
-        self.ws = websocket.WebSocket()
-        self.ws.connect(f"ws://{self.address}:{self.port}")
+        self.ws = create_connection(f"ws://{self.address}:{self.port}")
         self.listener = threading.Thread(target=self.__listener).start()
 
     def __listener(self) -> None:
         while self.alive:
             try:
                 r = self.ws.recv()
+                self.data.put(r)
+                self.ws.ping()
             except Exception as e:
                 print("error get data")
                 return
-            if r:
-                self.data.put(r)
 
     def send_server(self, data: dict, remove_token_from_object: bool = False) -> None:
         if not remove_token_from_object:
@@ -307,16 +329,16 @@ class Client(WebClient):
         data[PacketDataKeys.USER_OBJECT_ID_KEY] = data.get(PacketDataKeys.USER_OBJECT_ID_KEY, self.id)
         self.ws.send((json.dumps(data)+"\n").encode())
 
-    def listen(self, force: bool = False) -> dict:
+    def listen(self) -> dict:
         response = self.data.get(timeout=5)
         return json.loads(response)
 
-    def _get_data(self, type: str, force: bool = False) -> dict:
-        data = self.listen(force=force)
+    def _get_data(self, type: str) -> dict:
+        data = self.listen()
         while self.alive:
-            if data.get("ty") in [type, "empty"]:
+            if data.get("ty") in [type, "empty", "ero"]:
                 return data
-            data = self.listen(force=force)
+            data = self.listen()
 
     def __del__(self):
         self.alive = False
