@@ -329,11 +329,11 @@ class Client(WebClient):
         data[PacketDataKeys.USER_OBJECT_ID_KEY] = data.get(PacketDataKeys.USER_OBJECT_ID_KEY, self.id)
         self.ws.send((json.dumps(data)+"\n").encode())
 
-    def listen(self) -> dict:
+    def listen(self, p: bool = False) -> dict:
         response = self.data.get(timeout=5)
         return json.loads(response)
 
-    def _get_data(self, type: str) -> dict:
+    def _get_data(self, type: str, p: bool = False) -> dict:
         data = self.listen()
         while self.alive:
             if data.get("ty") in [type, "empty", "ero"]:
