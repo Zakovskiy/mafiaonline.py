@@ -49,7 +49,7 @@ class WebClient:
 
     def user_get(self, _id: str):
         data = {
-            "id": _id
+            "userObjectId": _id
         }
         response = requests.post(f"{self.rest_address}/user/get", data=data, headers=self.auth_headers).json()
         return response
