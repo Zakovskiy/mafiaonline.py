@@ -305,7 +305,7 @@ class Client(WebClient):
         self.send_server(data)
         return self._get_data("uup")
 
-    def match_making_get_status_(self):
+    def match_making_get_status(self):
         data = {
             "ty": "mmgsk"
         }
@@ -333,9 +333,10 @@ class Client(WebClient):
         }
         self.send_server(data)
 
-    def remove_type(self, type: int):
+    def remove_type(self, type: int = 0):
         data = {
-            "ty": "mmruk"
+            "ty": "agu",
+            "rmt": type
         }
         self.send_server(data)
 
