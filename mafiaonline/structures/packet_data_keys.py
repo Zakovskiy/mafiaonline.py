@@ -1,7 +1,7 @@
-from enum import StrEnum, Enum
+from enum import Enum
 
 
-class PacketDataKeys(StrEnum):
+class PacketDataKeys(str, Enum):
     ACCEPTED_KEY = "a"
     ACCEPT_MESSAGES_KEY = "ac"
     ACTIVE_KEY = "ac"
@@ -259,7 +259,10 @@ class PacketDataKeys(StrEnum):
     WRONG_FILE_TYPE_KEY = "wft"
     YOUR_FRIENDSHIP_LIST_FULL = "yflf"
     ID_KEY = "i"
-
+    MATCH_MAKING_SCORE = "mmscr"
+    MATCH_MAKING_ADD_USER_KEY = "mmauk"
+    MATCH_MAKING_REMOVE_USER_KEY = "mmruk"
+    
 
 class Renamers(dict, Enum):
     USER = {"user_id": "o", "username": "u", "updated": "up", "photo": "ph", "experience": "ex",
@@ -267,7 +270,8 @@ class Renamers(dict, Enum):
             "authority": "a", "gold": "g", "money": "mo", "is_vip": "v", "vip_updated": "vupd",
             "played_games": "pg", "score": "sc", "sex": "s", "wins_as_killer": "wik",
             "wins_as_mafia": "wim", "wins_as_peaceful": "wip", "token": "t", "accept_messages": "ac",
-            "rank": "r", "selected_language": "slc", "online": "on", "player_role_statistics": "prst"}
+            "rank": "r", "selected_language": "slc", "online": "on", "player_role_statistics": "prst",
+            "match_making_score": "mmscr"}
     SERVER_CONFIG = {"kick_user_price": "kup", "set_room_password_min_authority": "srpma",
                      "price_username_set": "pus", "server_language_change_time": "slct",
                      "show_password_room_info_button": "sprib"}
