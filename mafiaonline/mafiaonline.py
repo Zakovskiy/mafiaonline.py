@@ -1,10 +1,7 @@
-import socket
 import json
-import threading
 import threading
 import base64
 import time
-import socks
 from .utils.md5hash import Md5
 from .structures.packet_data_keys import PacketDataKeys
 from .structures.models import ModelUser, ModelServerConfig, ModelRoom, ModelFriend, ModelMessage
@@ -310,7 +307,7 @@ class Client(WebClient):
         self.send_server(data)
         return self._get_data("uup")
 
-    def match_making_get_status_(self):
+    def match_making_get_status(self):
         data = {
             "ty": "mmgsk"
         }
@@ -340,12 +337,24 @@ class Client(WebClient):
 
     def remove_type(self, type: int):
         data = {
-            "ty": "mmruk"
+            "ty": "agu",
+            "rmt": type
         }
         self.send_server(data)
 
     def create_connection(self) -> None:
         self.ws = create_connection(f"ws://{self.address}:{self.port}")
+        self.listener = threading.Thread(target=self.__listener).start()
+
+    def __listener(self) -> None:
+        while self.alive:
+            try:
+                r = self.ws.recv()
+                self.data.put(r)
+                self.ws.ping()
+            except Exception as e:
+                print("error get data")
+                return
 
     def send_server(self, data: dict, remove_token_from_object: bool = False) -> None:
         if not remove_token_from_object:
@@ -354,8 +363,7 @@ class Client(WebClient):
         self.ws.send((json.dumps(data)+"\n").encode())
 
     def listen(self) -> dict:
-        response = self.ws.recv()
-        self.ws.ping()
+        response = self.data.get(timeout=5)
         return json.loads(response)
 
     def _get_data(self, type: str) -> dict:
