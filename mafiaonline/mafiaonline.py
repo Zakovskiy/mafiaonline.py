@@ -1,10 +1,6 @@
-import socket
 import json
-import threading
-import threading
 import base64
 import time
-import socks
 from .utils.md5hash import Md5
 from .structures.packet_data_keys import PacketDataKeys
 from .structures.models import ModelUser, ModelServerConfig, ModelRoom, ModelFriend, ModelMessage
@@ -13,7 +9,6 @@ from typing import List
 from secrets import token_hex
 from msgspec.json import decode
 from .web import WebClient
-from queue import Queue
 from websocket import create_connection
 
 
@@ -234,11 +229,12 @@ class Client(WebClient):
         }
         self.send_server(data)
 
-    def role_action(self, user_id: str, room_id: str) -> None:
+    def role_action(self, user_id: str, room_id: str, rmt: int = 0) -> None:
         data = {
             "ty": "ra",
             "uo": user_id,
-            "ro": room_id
+            "ro": room_id,
+            "rmt": rmt
         }
         self.send_server(data, True)
 
@@ -309,19 +305,42 @@ class Client(WebClient):
         self.send_server(data)
         return self._get_data("uup")
 
+    def match_making_get_status_(self):
+        data = {
+            "ty": "mmgsk"
+        }
+        self.send_server(data)
+        return self._get_data("mmms")
+
+    def match_making_get_users_waits_count(self, players_size: int = 8):
+        data = {
+            "ty": "mmguiabk",
+            "mmbpa": players_size
+        }
+        self.send_server(data)
+        return self._get_data("mmuiabk")
+
+    def match_making_add_user_key(self, players_size: int = 8):
+        data = {
+            "ty": "mmauk",
+            "mmbpa": players_size
+        }
+        self.send_server(data)
+
+    def match_making_remove_user_key(self):
+        data = {
+            "ty": "mmruk"
+        }
+        self.send_server(data)
+
+    def remove_type(self, type: int):
+        data = {
+            "ty": "mmruk"
+        }
+        self.send_server(data)
+
     def create_connection(self) -> None:
         self.ws = create_connection(f"ws://{self.address}:{self.port}")
-        self.listener = threading.Thread(target=self.__listener).start()
-
-    def __listener(self) -> None:
-        while self.alive:
-            try:
-                r = self.ws.recv()
-                self.data.put(r)
-                self.ws.ping()
-            except Exception as e:
-                print("error get data")
-                return
 
     def send_server(self, data: dict, remove_token_from_object: bool = False) -> None:
         if not remove_token_from_object:
@@ -330,7 +349,8 @@ class Client(WebClient):
         self.ws.send((json.dumps(data)+"\n").encode())
 
     def listen(self) -> dict:
-        response = self.data.get(timeout=5)
+        response = self.ws.recv()
+        self.data.ping()
         return json.loads(response)
 
     def _get_data(self, type: str) -> dict:
