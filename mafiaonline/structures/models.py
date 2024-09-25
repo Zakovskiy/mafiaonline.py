@@ -30,6 +30,7 @@ class ModelUser(Struct, rename=Renamers.USER):
     selected_language: Languages = Languages.RUSSIAN
     online: int = None
     player_role_statistics: dict = None
+    match_making_score: int = None
 
 
 class ModelServerConfig(Struct, rename=Renamers.SERVER_CONFIG):
