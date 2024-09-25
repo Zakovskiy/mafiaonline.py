@@ -1,6 +1,10 @@
+import socket
 import json
+import threading
+import threading
 import base64
 import time
+import socks
 from .utils.md5hash import Md5
 from .structures.packet_data_keys import PacketDataKeys
 from .structures.models import ModelUser, ModelServerConfig, ModelRoom, ModelFriend, ModelMessage
@@ -9,6 +13,7 @@ from typing import List
 from secrets import token_hex
 from msgspec.json import decode
 from .web import WebClient
+from queue import Queue
 from websocket import create_connection
 
 
@@ -305,7 +310,7 @@ class Client(WebClient):
         self.send_server(data)
         return self._get_data("uup")
 
-    def match_making_get_status(self):
+    def match_making_get_status_(self):
         data = {
             "ty": "mmgsk"
         }
@@ -333,10 +338,9 @@ class Client(WebClient):
         }
         self.send_server(data)
 
-    def remove_type(self, type: int = 0):
+    def remove_type(self, type: int):
         data = {
-            "ty": "agu",
-            "rmt": type
+            "ty": "mmruk"
         }
         self.send_server(data)
 
@@ -351,7 +355,7 @@ class Client(WebClient):
 
     def listen(self) -> dict:
         response = self.ws.recv()
-        self.data.ping()
+        self.ws.ping()
         return json.loads(response)
 
     def _get_data(self, type: str) -> dict:
