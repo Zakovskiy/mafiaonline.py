@@ -1,4 +1,4 @@
-from enum import IntEnum, StrEnum
+from enum import IntEnum, Enum
 
 
 class Sex(IntEnum):
@@ -6,7 +6,7 @@ class Sex(IntEnum):
     MEN = 1
 
 
-class Languages(StrEnum):
+class Languages(str, Enum):
     UNSELECTED = ""
     RUSSIAN = "ru"
     ENGLISH = "en"
